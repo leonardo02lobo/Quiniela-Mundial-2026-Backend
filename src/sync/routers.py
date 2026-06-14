@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.auth.models import User
@@ -63,3 +63,22 @@ async def map_fixtures(
     client = ApiFootballClient(settings.api_football_key)
     result = await SyncService(db, client).map_fixtures()
     return MappingResult(**result)
+
+
+@router.get(
+    "/cron",
+    response_model=SyncResult,
+    response_model_by_alias=True,
+    include_in_schema=False,
+)
+async def cron_sync(
+    authorization: str = Header(...),
+    db: AsyncSession = Depends(get_db),
+) -> SyncResult:
+    """Endpoint llamado por Vercel Cron Jobs. Autenticado por CRON_SECRET."""
+    expected = f"Bearer {settings.cron_secret}"
+    if not settings.cron_secret or authorization != expected:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
+    client = ApiFootballClient(settings.api_football_key)
+    result = await SyncService(db, client).sync_pending_matches()
+    return SyncResult(**result)

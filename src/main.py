@@ -112,6 +112,11 @@ app.include_router(admin_router)
 app.include_router(sync_router)
 
 
+@app.get("/", include_in_schema=False)
+async def root() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.get("/health", tags=["health"], summary="Health check")
 async def health_check() -> dict[str, str]:
     """Verifica que el servidor esté en línea."""

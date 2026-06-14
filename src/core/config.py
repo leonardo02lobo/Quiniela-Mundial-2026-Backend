@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     api_football_key: str = ""
     sync_cron_hour: int = 2
     sync_cron_minute: int = 0
+    cron_secret: str = ""
 
     @property
     def database_url(self) -> DbURL:

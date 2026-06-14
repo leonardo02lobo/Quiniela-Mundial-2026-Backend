@@ -1,4 +1,5 @@
 import logging
+import os
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -11,6 +12,10 @@ from src.sync.service import SyncService
 logger = logging.getLogger(__name__)
 
 scheduler = AsyncIOScheduler(timezone="UTC")
+
+# Vercel is serverless — APScheduler can't hold a persistent process there.
+# Cron jobs are handled by vercel.json + /admin/sync/cron endpoint instead.
+_IS_VERCEL = bool(os.getenv("VERCEL"))
 
 
 async def _daily_sync_job() -> None:
@@ -26,6 +31,9 @@ async def _daily_sync_job() -> None:
 
 
 def start_scheduler() -> None:
+    if _IS_VERCEL:
+        logger.info("Entorno Vercel detectado — scheduler APScheduler deshabilitado (usar Vercel Cron Jobs)")
+        return
     if not settings.api_football_key:
         logger.warning("API_FOOTBALL_KEY no configurado — sync scheduler deshabilitado")
         return
